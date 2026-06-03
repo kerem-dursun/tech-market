@@ -1,0 +1,40 @@
+@model IEnumerable<tech_market.Models.Product>
+
+@{
+    ViewData["Title"] = "Store";
+}
+
+<h1>Technology Store</h1>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                {
+                    <img src="@item.ImageUrl" class="card-img-top" alt="@item.Name" style="height: 200px; object-fit: contain;">
+                }
+                <div class="card-body">
+                    <h5 class="card-title">@item.Name</h5>
+                    <p class="card-text text-muted">@item.Manufacturer</p>
+                    <p class="card-text">@item.Description</p>
+                    <h4 class="text-primary">@item.Price $</h4>
+                    <p class="text-secondary">Stock: @item.StockQuantity</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-grid gap-2">
+                        <form asp-action="AddToCart" method="post">
+                            <input type="hidden" name="productId" value="@item.Id" />
+                            <button type="submit" class="btn btn-success w-100 mb-2">Add to Cart</button>
+                        </form>
+                        <form asp-action="AddToWishlist" method="post">
+                            <input type="hidden" name="productId" value="@item.Id" />
+                            <button type="submit" class="btn btn-outline-danger w-100">Add to Wishlist</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

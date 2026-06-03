@@ -1,0 +1,32 @@
+@model tech_market.Models.User
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h1>Register</h1>
+
+<form asp-action="Register">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    
+    <div>
+        <label asp-for="Username"></label>
+        <input asp-for="Username" class="form-control" />
+    </div>
+    
+    <div>
+        <label asp-for="Email"></label>
+        <input asp-for="Email" type="email" class="form-control" />
+    </div>
+    
+    <div>
+        <label>Password</label>
+        <input asp-for="PasswordHash" type="password" class="form-control" />
+    </div>
+    
+    <button type="submit" class="btn btn-primary mt-3">Register</button>
+</form>
+
+<div class="mt-2">
+    <a asp-action="Login">Already have an account? Login here.</a>
+</div>

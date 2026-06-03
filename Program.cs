@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using tech_market.Data;
 
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => { options.LoginPath = "/CourseModel/Login"; options.AccessDeniedPath = "/CourseModel/AccessDenied"; });
 
 var app = builder.Build();
 
@@ -20,13 +22,14 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=CourseModel}/{action=Index}/{id?}")
+    pattern: "{controller=CourseModel}/{action=Login}/{id?}")
     .WithStaticAssets();
 
 
