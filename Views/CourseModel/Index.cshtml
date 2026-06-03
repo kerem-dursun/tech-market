@@ -4,43 +4,74 @@
     ViewData["Title"] = "Products";
 }
 
-<h1>Products</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="text-dark">Product Management</h1>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Create New Product
+    </a>
+</div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Image</th>
-            <th>Name</th>
-            <th>Manufacturer</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
-                    {
-                        <img src="@item.ImageUrl" alt="@item.Name" width="100" />
-                    }
-                </td>
-                <td>@item.Name</td>
-                <td>@item.Manufacturer</td>
-                <td>@item.Price</td>
-                <td>@item.StockQuantity</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="card shadow border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-dark">
+                <tr>
+                    <th class="ps-4" style="width: 120px;">Image</th>
+                    <th>Product Details</th>
+                    <th>Manufacturer</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="ps-4">
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.Name" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: contain; background: white;" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div class="fw-bold">@item.Name</div>
+                            <small class="text-muted d-block text-truncate" style="max-width: 250px;">@item.Description</small>
+                        </td>
+                        <td><span class="badge bg-secondary">@item.Manufacturer</span></td>
+                        <td class="fw-bold text-primary">@item.Price $</td>
+                        <td>
+                            @if (item.StockQuantity < 10)
+                            {
+                                <span class="badge bg-warning text-dark">@item.StockQuantity (Low)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">@item.StockQuantity</span>
+                            }
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group btn-group-sm">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Details">
+                                    <i class="bi bi-info-circle"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

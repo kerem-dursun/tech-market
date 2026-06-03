@@ -5,6 +5,8 @@ using tech_market.Models;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using tech_market.Helpers;
 
 namespace tech_market.Controllers;
 
@@ -19,11 +21,13 @@ public class CourseModelController : Controller
         _environment = environment;
     }
 
+    [Authorize(Roles = "Technician")]
     public async Task<IActionResult> Index()
     {
         return View(await _context.Products.ToListAsync());
     }
 
+    [Authorize(Roles = "Technician")]
     public IActionResult Create()
     {
         return View();
@@ -64,7 +68,7 @@ public class CourseModelController : Controller
         }
         return View(product);
     }
-
+    [Authorize(Roles = "Technician")]
     public async Task<IActionResult> Details(int? id)
     {
         if (id == null)
@@ -80,7 +84,7 @@ public class CourseModelController : Controller
 
         return View(product);
     }
-
+    [Authorize(Roles = "Technician")]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
@@ -158,6 +162,7 @@ public class CourseModelController : Controller
         return View(product);
     }
 
+    [Authorize(Roles = "Technician")]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
@@ -209,11 +214,13 @@ public class CourseModelController : Controller
 
             if (emailExists)
             {
-                ModelState.AddModelError("Email", "This email is already in use.");
+                ModelState.AddModelError("Email", "This email address is already in use.");
                 return View(user);
             }
-
+            
+            user.PasswordHash = SecurityHelper.HashPassword(user.PasswordHash);
             user.Role = UserRole.Customer;
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Login));
@@ -230,7 +237,9 @@ public class CourseModelController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(string email, string passwordHash)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == passwordHash);
+        string hashedInput = SecurityHelper.HashPassword(passwordHash);
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == hashedInput);
 
         if (user != null)
         {
@@ -246,7 +255,11 @@ public class CourseModelController : Controller
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
-            return RedirectToAction(nameof(Index));
+            if (user.Role == UserRole.Technician)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+            return RedirectToAction(nameof(Store));
         }
 
         ModelState.AddModelError(string.Empty, "Invalid login attempt.");
@@ -259,6 +272,7 @@ public class CourseModelController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> Store()
     {
         var products = await _context.Products.ToListAsync();
@@ -298,6 +312,7 @@ public class CourseModelController : Controller
         return RedirectToAction(nameof(Cart));
     }
 
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> Cart()
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -368,6 +383,15 @@ public class CourseModelController : Controller
             return RedirectToAction(nameof(Cart));
         }
 
+        foreach (var item in cartItems)
+        {
+            if (item.Product.StockQuantity < item.Quantity)
+            {
+                TempData["ErrorMessage"] = "Insufficient stock for " + item.Product.Name + ". Available stock: " + item.Product.StockQuantity;
+                return RedirectToAction(nameof(Cart));
+            }
+        }
+
         var order = new Order
         {
             UserId = userId,
@@ -396,6 +420,7 @@ public class CourseModelController : Controller
         return RedirectToAction(nameof(OrderHistory));
     }
 
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> OrderHistory()
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -409,5 +434,66 @@ public class CourseModelController : Controller
         var orders = await _context.Orders.Include(o => o.OrderItems).ThenInclude(oi => oi.Product).Where(o => o.UserId == userId).OrderByDescending(o => o.OrderDate).ToListAsync();
 
         return View(orders);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddToWishlist(int productId)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        int userId = int.Parse(userIdString);
+
+        var exists = await _context.WishlistItems
+            .AnyAsync(w => w.UserId == userId && w.ProductId == productId);
+
+        if (!exists)
+        {
+            var wishlistItem = new WishlistItem
+            {
+                UserId = userId,
+                ProductId = productId
+            };
+            _context.WishlistItems.Add(wishlistItem);
+            await _context.SaveChangesAsync();
+        }
+
+        return RedirectToAction(nameof(Wishlist));
+    }
+
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Wishlist()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        int userId = int.Parse(userIdString);
+
+        var wishlistItems = await _context.WishlistItems
+            .Include(w => w.Product)
+            .Where(w => w.UserId == userId)
+            .ToListAsync();
+
+        return View(wishlistItems);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveFromWishlist(int wishlistItemId)
+    {
+        var wishlistItem = await _context.WishlistItems.FindAsync(wishlistItemId);
+        if (wishlistItem != null)
+        {
+            _context.WishlistItems.Remove(wishlistItem);
+            await _context.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Wishlist));
     }
 }

@@ -32,5 +32,24 @@ app.MapControllerRoute(
     pattern: "{controller=CourseModel}/{action=Login}/{id?}")
     .WithStaticAssets();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<tech_market.Data.AppDbContext>();
+
+    context.Database.Migrate();
+
+    if (!context.Users.Any(u => u.Role == tech_market.Models.UserRole.Technician))
+    {
+        context.Users.Add(new tech_market.Models.User
+        {
+            Username = "tech",
+            Email = "tech@market.com",
+            PasswordHash = tech_market.Helpers.SecurityHelper.HashPassword("tech123"),
+            Role = tech_market.Models.UserRole.Technician
+        });
+        context.SaveChanges();
+    }
+}
 
 app.Run();
